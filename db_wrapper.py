@@ -37,7 +37,7 @@ class DbWrapper:
         return [rd['emp'] for rd in results.data()]
 
     def get_employee(self, _id):
-        q = "MATCH (emp:Employee {id:{id}} ) return emp"
+        q = "MATCH (emp:Employee {eid:{id}} ) return emp"
         params = {"id": _id}
         results = self._run(q, params)
         return results.data()[0]['emp']
@@ -49,16 +49,21 @@ class DbWrapper:
     
     ## Messages related APIs
 
-
     ## Recipient related APIs
     def get_all_recipients(self):
         q = "MATCH (rec: Recipient) return rec"
         results = self._run(q)
         return [rd['rec'] for rd in results.data()]
-        return results.data()
 
     ## Path tracking
-
+    def get_path_from(self, firstName, lastName, emailId):
+        #q = "match (startNode:Employee {firstName:{firstName}}, lastName:{lastName}}), (endNode:Message {id:{mid}}) call apoc.algo.dijkstra(startNode, endNode, 'SENT', 'd') yield path as path, weight as weight return path"
+        #params = {'firstName': firstName, 'lastName':lastName, 'mid':mid}
+        #q = "match (startNode:Employee {firstName:'Lynn', lastName:'Blair'}), (endNode:Recipient {emailId:'fran.fagan@enron.com'}) call apoc.algo.dijkstra(startNode, endNode, 'SENT|SENT_TO', 'd') yield path as path, weight as weight return path"
+        q = "match (startNode:Employee {firstName:{firstName}, lastName:{lastName}}), (endNode:EmailId {address:{emailId}}) call apoc.algo.dijkstra(startNode, endNode, 'HAS|SENT', 'weight') yield path as path return apoc.path.elements(path) limit 1"
+        params = {'firstName':firstName, 'lastName':lastName, 'emailId':emailId}
+        results = self._run(q, params)
+        return [rd for rd in results.data()][0]['apoc.path.elements(path)']
 
 def get_driver(host='localhost', user='neo4j', password=None):
     global driver, default_password
@@ -70,15 +75,24 @@ def get_driver(host='localhost', user='neo4j', password=None):
 
 if __name__ == '__main__':
     driver = get_driver()
-    result = driver.get_employee('43')
+    result = driver.get_employee(43)
     assert result['firstName'] == 'Larry'
     assert result['lastName'] == 'Campbell'
 
     result = driver.get_all_employees()
     assert len(result) == 149
     result = driver.get_employee_by_name('Larry', 'Campbell')
-    assert result['id'] == '43'
-    del driver ## this is ugly. see if we can manage this as a context manager
+    assert result['eid'] == 43
+
+    path = driver.get_path_from('Lynn', 'Blair', 'fran.fagan@enron.com')
+    #assert len(path) == 9
+    #print(path)
+
+    path = driver.get_path_from('Lynn', 'Blair', 'tidwellgreer@bfusa.com')
+    print(len(path), path)
+
+    ## TODO: this is ugly. see if we can manage this as a context manager
+    del driver 
 
 
 

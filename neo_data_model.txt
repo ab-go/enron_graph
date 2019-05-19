@@ -1,50 +1,26 @@
 // cypher language commands for creating the data model in the neo4j db
 // create constraints and indices on tables
-create constraint on (e:Employee) assert e.id is UNIQUE;
-create constraint on (e:Employee) assert e.emailId is UNIQUE;
-create constraint on (m:Message) assert m.id is UNIQUE;
-create constraint on (r:Recipient) assert r.id is UNIQUE;
-
+create constraint on (e:Employee) assert e.eid is UNIQUE;
 create constraint on (em: EmailId) assert em.id is UNIQUE;
+create constraint on (em: EmailId) assert em.address is UNIQUE;
 
 // use periodic commit to get better performance
 
 // load employeelist
-load csv with headers from 'file:///employeelist.csv' as line
-create (e:Employee {id: toint(line.eid), firstName: line.firstName, lastName: line.lastName, emailId: replace(replace(line.Email_id, ' ', ''), '..', '.'), emailId2:replace(replace(line.Email2, ' ', ''), '..', '.'), emailId3:replace(replace(line.Email3, ' ', ''), '..', '.'), emailId4:replace(replace(line.Email4, ' ', ''), '..', '.')} )
+load csv with headers from 'file:///employees.csv' as line
+create (e:Employee {eid: toint(line.eid), firstName: line.firstName, lastName: line.lastName, status:line.status})
 
-// load message
-using periodic commit 1000 
-load csv with headers from 'file:///message.csv' as line
-create (m: Message {id: toint(line.mid), sender:replace(replace(line.sender, ' ', ''), '..', '.'), date:apoc.date.parse(line.date)})
-
-// load recipientinfo
-using periodic commit 1000
-load csv with headers from 'file:///recipientinfo.csv' as line create(:Recipient {id:toint(line.id), mid:toint(line.mid), rtype:line.rtype, emailId:replace(replace(line.rvalue, ' ', ''), '..', '.')} )
-
-// load all email addresses
-load csv from 'file:///all_email_ids.txt' as line
-create (em:EmailId {id:rTrim(line[0])})
-
-// create relationships between these nodes
-// 
-match (em: EmailId), (m: Message) 
-where em.id = m.sender
-create (em)-[s:SENT]->(m)
+// load email ids
+load csv with headers from 'file:///email_employee.csv' as line
+create (em:EmailId {id: toint(line.id), address:line.address, eid:toint(line.eid)})
 
 // match employees to email ids
-match (e: Employee), (em: EmailId)
-where e.emailId = em.id
+match (em:EmailId), (e:Employee)
+where em.eid = e.eid
 create (e)-[:HAS]->(em)
-create (em)-[:BELONGS_TO]->(e)
 
-// create links between recipients and messages
-match (r:Recipient), (m: Message)
-where r.mid=m.id
-create (r)-[:RECEIVED]->(m)
-create (m)-[:SENT_TO]->(r)
-
-// create links between recipients and the email ids they belong to
-match (r:Recipient), (em: EmailId)
-where r.emailId = em.id
-create (r)-[:THE_SAME_AS]->(em)
+// load emailed table
+load csv with headers from 'file:///emailed.csv' as line 
+match (sender:EmailId {id: toint(line.sender)})
+match (receiver:EmailId {id: toint(line.receiver)})
+create (sender)-[:SENT]->(receiver)
