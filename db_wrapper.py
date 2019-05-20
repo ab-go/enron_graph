@@ -149,7 +149,7 @@ class DbWrapper:
         ## check to see if the employee exists
         emp = try_and_get(self.get_employee_by_name, firstName, lastName)
         if not emp:
-            return self.get_email_path(self.get_potential_email_id(firstName, lastName), emailId)
+            return self.get_path_from_email_to_email(self.get_potential_email_id(firstName, lastName), emailId)
 
         to  = try_and_get(self.get_email_id, emailId)
         if not to:
