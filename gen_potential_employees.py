@@ -48,6 +48,10 @@ def generate_potential_employees(f_path):
             fn = g[0]
             ln = g[-1]
 
+            if not fn or not ln:
+                print("invalid name: firstName: {}, lastName: {}".format(fn, ln))
+                continue
+
             d = {'address': email_id}
 
             ##  search for the first name in the db

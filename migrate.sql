@@ -105,6 +105,7 @@ inner join message_brief m on r.mid = m.mid;
 -- just a single link instead of all the links
 create table emailed (sender int(10), receiver int(10));
 insert into emailed select distinct sender, receiver from sent_brief;
+delete from emailed where sender=receiver;
 
 -- export data that can be ingested into neo4j
 -- export the employeelist
